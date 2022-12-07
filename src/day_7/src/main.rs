@@ -8,11 +8,10 @@ use shared::input::AocBufReader;
 lazy_static! {
     static ref CD_REGEX: Regex = Regex::new(r"^\$ cd ([a-zA-Z\.]*)$").unwrap();
     static ref LS_REGEX: Regex = Regex::new(r"^\$ ls$").unwrap();
-    static ref DIR_LISTING_REGEX: Regex = Regex::new(r"^dir ([a-zA-Z]*)$").unwrap();
     static ref FILE_LISTING_REGEX: Regex = Regex::new(r"^([0-9]*) ([a-zA-Z\.]*)$").unwrap();
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 enum FileType {
     FILE,
     DIRECTORY,
@@ -53,6 +52,21 @@ impl File {
             size: size,
         }
     }
+
+    fn total_size(&self, file_system: &FileSystem) -> usize {
+        match self.file_type {
+            FileType::FILE => self.size,
+            FileType::DIRECTORY => self
+                .children_file_names_by_id
+                .keys()
+                .map(|file_id| {
+                    file_system
+                        .get_file_by_id(*file_id)
+                        .total_size(&file_system)
+                })
+                .sum(),
+        }
+    }
 }
 
 struct FileSystem {
@@ -68,8 +82,14 @@ impl FileSystem {
 
     fn make_directory(&mut self, name: String, parent_id: usize) -> usize {
         let n_files = self.files.len();
-        let new_file = File::new_directory(n_files, name, Some(parent_id));
+        let new_file = File::new_directory(n_files, name.clone(), Some(parent_id));
         self.files.push(new_file);
+        self.files[parent_id]
+            .children_file_ids_by_name
+            .insert(name.clone(), n_files);
+        self.files[parent_id]
+            .children_file_names_by_id
+            .insert(n_files, name);
         n_files
     }
 
@@ -89,6 +109,14 @@ impl FileSystem {
 
     fn get_file_by_id(&self, id: usize) -> &File {
         &self.files[id]
+    }
+
+    fn directories(&self) -> Vec<File> {
+        self.files
+            .iter()
+            .filter(|file| file.file_type == FileType::DIRECTORY)
+            .cloned()
+            .collect()
     }
 }
 
@@ -119,15 +147,7 @@ fn parse_input(mut reader: AocBufReader) -> FileSystem {
                 }
             }
         } else if let Some(_ls_match) = LS_REGEX.captures(&command) {
-            println!("Listing directory contents!");
-        } else if let Some(dir_listing) = DIR_LISTING_REGEX.captures(&command) {
-            let new_directory_name: String = dir_listing.get(1).unwrap().as_str().to_string();
-            if !cwd
-                .children_file_ids_by_name
-                .contains_key(&new_directory_name)
-            {
-                file_system.make_directory(new_directory_name, cwd.id);
-            }
+            continue;
         } else if let Some(file_listing) = FILE_LISTING_REGEX.captures(&command) {
             let new_file_name: String = file_listing.get(2).unwrap().as_str().to_string();
             let new_file_size: usize = file_listing
@@ -143,6 +163,35 @@ fn parse_input(mut reader: AocBufReader) -> FileSystem {
     file_system
 }
 
+fn part_1(file_system: &FileSystem) -> usize {
+    let part_1_threshold: usize = 100_000;
+
+    file_system
+        .directories()
+        .iter()
+        .map(|directory| directory.total_size(file_system))
+        .filter(|total_size| total_size <= &part_1_threshold)
+        .sum()
+}
+
+fn part_2(file_system: &FileSystem) -> usize {
+    let system_disk_space: usize = 70_000_000;
+    let required_disk_space: usize = 30_000_000;
+    let remaining_disk_space =
+        system_disk_space - file_system.get_file_by_id(0).total_size(file_system);
+    let disk_space_must_free = required_disk_space - remaining_disk_space;
+
+    file_system
+        .directories()
+        .iter()
+        .map(|directory| directory.total_size(file_system))
+        .filter(|total_size| total_size >= &disk_space_must_free)
+        .min()
+        .unwrap()
+}
+
 fn main() {
-    let _root_directory = parse_input(AocBufReader::from_string("inputs/example.txt"));
+    let file_system = parse_input(AocBufReader::from_string("inputs/part_1.txt"));
+    println!("{}", part_1(&file_system));
+    println!("{}", part_2(&file_system));
 }
