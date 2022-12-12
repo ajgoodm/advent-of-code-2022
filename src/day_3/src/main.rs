@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use shared::conversion::char_to_usize;
 use shared::input::AocBufReader;
 
 fn main() {
@@ -22,18 +23,10 @@ fn shared_character(items: String) -> char {
         .unwrap()
 }
 
-fn char_to_val(c: char) -> usize {
-    if c.is_uppercase() {
-        (c as u8 as usize) - 38
-    } else {
-        (c as u8 as usize) - 96
-    }
-}
-
 fn rucksack_priority_pt_1(reader: AocBufReader) -> usize {
     reader
         .into_iter()
-        .map(|string| char_to_val(shared_character(string)))
+        .map(|string| char_to_usize(shared_character(string)))
         .sum()
 }
 
@@ -48,7 +41,7 @@ fn rucksack_badges_pt_2(mut reader: AocBufReader) -> usize {
         elf_2 = reader.next().unwrap();
         elf_3 = reader.next().unwrap();
 
-        badge_sum += char_to_val(
+        badge_sum += char_to_usize(
             *elf_1
                 .chars()
                 .collect::<HashSet<char>>()
@@ -81,16 +74,8 @@ mod tests {
     }
 
     #[test]
-    fn test_char_to_val() {
-        assert_eq!(char_to_val('A'), 27);
-        assert_eq!(char_to_val('b'), 2);
-    }
-
-    #[test]
-    fn test_scoring() {
-        assert_eq!(
-            rucksack_priority_pt_1("vJrwpWtwJgWrhcsFMMfFFhFp".to_string()),
-            0 // 16
-        );
+    fn test_char_to_usize() {
+        assert_eq!(char_to_usize('A'), 27);
+        assert_eq!(char_to_usize('b'), 2);
     }
 }
