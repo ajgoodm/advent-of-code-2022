@@ -18,9 +18,9 @@ struct Object {
 
 #[derive(Debug, PartialEq, Eq)]
 enum Comparison {
-    ORDERED,
-    EQUAL,
-    OUT_OF_ORDER,
+    Ordered,
+    Equal,
+    OutOfOrder,
 }
 
 impl Object {
@@ -67,37 +67,37 @@ impl Object {
         }
     }
 
-    fn is_ordered(left: &Object, right: &Object) -> Comparison {
+    fn is_Ordered(left: &Object, right: &Object) -> Comparison {
         if left.object_type == ObjectType::LIST && right.object_type == ObjectType::LIST {
             for idx in 0..cmp::min(left.len(), right.len()) {
-                match Object::is_ordered(&left.list[idx], &right.list[idx]) {
-                    Comparison::ORDERED => return Comparison::ORDERED,
-                    Comparison::EQUAL => (),
-                    Comparison::OUT_OF_ORDER => return Comparison::OUT_OF_ORDER,
+                match Object::is_Ordered(&left.list[idx], &right.list[idx]) {
+                    Comparison::Ordered => return Comparison::Ordered,
+                    Comparison::Equal => (),
+                    Comparison::OutOfOrder => return Comparison::OutOfOrder,
                 }
             }
             if left.len() < right.len() {
-                return Comparison::ORDERED;
+                return Comparison::Ordered;
             } else if left.len() > right.len() {
-                return Comparison::OUT_OF_ORDER;
+                return Comparison::OutOfOrder;
             } else {
-                return Comparison::EQUAL;
+                return Comparison::Equal;
             }
         } else if left.object_type == ObjectType::ELEMENT
             && right.object_type == ObjectType::ELEMENT
         {
             if left.element_value < right.element_value {
-                return Comparison::ORDERED;
+                return Comparison::Ordered;
             } else if left.element_value > right.element_value {
-                return Comparison::OUT_OF_ORDER;
+                return Comparison::OutOfOrder;
             } else {
-                return Comparison::EQUAL;
+                return Comparison::Equal;
             }
         } else {
             if left.object_type == ObjectType::ELEMENT {
-                return Object::is_ordered(&Object::list_from_val(left.element_value), &right);
+                return Object::is_Ordered(&Object::list_from_val(left.element_value), &right);
             } else {
-                return Object::is_ordered(&left, &Object::list_from_val(right.element_value));
+                return Object::is_Ordered(&left, &Object::list_from_val(right.element_value));
             }
         }
     }
@@ -109,11 +109,11 @@ struct PacketPair {
 }
 
 impl PacketPair {
-    fn is_ordered(&self) -> bool {
-        match Object::is_ordered(&self.left, &self.right) {
-            Comparison::ORDERED => true,
-            Comparison::OUT_OF_ORDER => false,
-            Comparison::EQUAL => panic!("Don't know what to do if packet pair is equal"),
+    fn is_Ordered(&self) -> bool {
+        match Object::is_Ordered(&self.left, &self.right) {
+            Comparison::Ordered => true,
+            Comparison::OutOfOrder => false,
+            Comparison::Equal => panic!("Don't know what to do if packet pair is Equal"),
         }
     }
 }
@@ -208,7 +208,7 @@ fn part_1(mut reader: AocBufReader) -> usize {
             let line_2 = reader.next().unwrap();
             let _empty_line = reader.next();
             let packet_pair = parse_packet_pair(line_1, line_2);
-            if packet_pair.is_ordered() {
+            if packet_pair.is_Ordered() {
                 running_sum += packet_pair_idx;
             }
             packet_pair_idx += 1;
@@ -225,13 +225,13 @@ fn bubble_sort(packets: &mut Vec<Object>) {
     while swap_occurred {
         swap_occurred = false;
         for idx in 0..(packets.len() - 1) {
-            let is_ordered: bool = match Object::is_ordered(&packets[idx], &packets[idx + 1]) {
-                Comparison::ORDERED => true,
-                Comparison::OUT_OF_ORDER => false,
-                Comparison::EQUAL => panic!("Something went wrong in bubble sort"),
+            let is_Ordered: bool = match Object::is_Ordered(&packets[idx], &packets[idx + 1]) {
+                Comparison::Ordered => true,
+                Comparison::OutOfOrder => false,
+                Comparison::Equal => panic!("Something went wrong in bubble sort"),
             };
 
-            if !is_ordered {
+            if !is_Ordered {
                 unsafe {
                     let pa: *mut Object = &mut packets[idx];
                     let pb: *mut Object = &mut packets[idx + 1];
@@ -295,61 +295,61 @@ mod tests {
     }
 
     #[test]
-    fn test_is_ordered() {
+    fn test_is_Ordered() {
         assert_eq!(
-            Object::is_ordered(
+            Object::is_Ordered(
                 &parse_packet("[1,1,3,1,1]".to_string()),
                 &parse_packet("[1,1,5,1,1]".to_string())
             ),
-            Comparison::ORDERED
+            Comparison::Ordered
         );
 
         assert_eq!(
-            Object::is_ordered(
+            Object::is_Ordered(
                 &parse_packet("[[1],[2,3,4]]".to_string()),
                 &parse_packet("[[1],4]".to_string())
             ),
-            Comparison::ORDERED
+            Comparison::Ordered
         );
 
         assert_eq!(
-            Object::is_ordered(
+            Object::is_Ordered(
                 &parse_packet("[9]".to_string()),
                 &parse_packet("[[8,7,6]]".to_string())
             ),
-            Comparison::OUT_OF_ORDER
+            Comparison::OutOfOrder
         );
 
         assert_eq!(
-            Object::is_ordered(
+            Object::is_Ordered(
                 &parse_packet("[[4,4],4,4]".to_string()),
                 &parse_packet("[[4,4],4,4,4]".to_string())
             ),
-            Comparison::ORDERED
+            Comparison::Ordered
         );
 
         assert_eq!(
-            Object::is_ordered(
+            Object::is_Ordered(
                 &parse_packet("[]".to_string()),
                 &parse_packet("[3]".to_string())
             ),
-            Comparison::ORDERED
+            Comparison::Ordered
         );
 
         assert_eq!(
-            Object::is_ordered(
+            Object::is_Ordered(
                 &parse_packet("[[[]]]".to_string()),
                 &parse_packet("[[]]".to_string())
             ),
-            Comparison::OUT_OF_ORDER
+            Comparison::OutOfOrder
         );
 
         assert_eq!(
-            Object::is_ordered(
+            Object::is_Ordered(
                 &parse_packet("[1,[2,[3,[4,[5,6,7]]]],8,9]".to_string()),
                 &parse_packet("[1,[2,[3,[4,[5,6,0]]]],8,9]".to_string())
             ),
-            Comparison::OUT_OF_ORDER
+            Comparison::OutOfOrder
         );
     }
 
@@ -362,7 +362,7 @@ mod tests {
 
     #[test]
     fn test_multi_digit() {
-        Object::is_ordered(
+        Object::is_Ordered(
             &parse_packet(
                 "[[],[],[[2],[[],[7,10,0],2],[[6],3]],[8,10,[4]],[2,0,2,[2,[2,0],4,[1,2,7,4]],7]]"
                     .to_string(),
