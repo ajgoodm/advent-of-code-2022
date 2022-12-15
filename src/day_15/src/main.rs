@@ -225,7 +225,6 @@ fn main() {
     let sensors = parse_input(reader);
     println!("{}", part_1(sensors, 2000000));
 
-    // too low: 5084742
     let reader = AocBufReader::from_string("inputs/part_1.txt");
     let sensors = parse_input(reader);
     println!("{}", part_2(sensors, 4_000_000));
