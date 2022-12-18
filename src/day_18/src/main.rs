@@ -66,23 +66,12 @@ impl BoundingBox {
 
 struct RockWithHoles {
     rock_coords: HashSet<Coord>,
-    boundary_air_coords: HashSet<Coord>,
     bounding_box: BoundingBox,
 }
 
 impl RockWithHoles {
     fn new(reader: AocBufReader) -> RockWithHoles {
         let rock_coords = parse_input(reader);
-        let mut boundary_air_coords: HashSet<Coord> = HashSet::new();
-        for rock_coord in &rock_coords {
-            boundary_air_coords.extend(
-                rock_coord
-                    .neighbors()
-                    .difference(&rock_coords)
-                    .cloned()
-                    .collect::<HashSet<Coord>>(),
-            );
-        }
 
         let min_x: isize = rock_coords.iter().map(|coord| coord.x).min().unwrap();
         let max_x: isize = rock_coords.iter().map(|coord| coord.x).max().unwrap();
@@ -105,7 +94,6 @@ impl RockWithHoles {
 
         RockWithHoles {
             rock_coords,
-            boundary_air_coords,
             bounding_box,
         }
     }
