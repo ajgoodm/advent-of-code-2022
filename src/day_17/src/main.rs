@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use shared::input::AocBufReader;
 
@@ -22,6 +22,10 @@ impl JetIterator {
             _len,
             _idx,
         }
+    }
+
+    fn len(&self) -> usize {
+        self._len
     }
 
     fn next(&mut self) -> JetDirection {
@@ -73,6 +77,10 @@ impl RockIterator {
         let _len: usize = 5;
         let _idx: usize = 0;
         RockIterator { _rocks, _len, _idx }
+    }
+
+    fn len(&self) -> usize {
+        self._len
     }
 
     fn next(&mut self) -> RockShape {
@@ -305,6 +313,37 @@ impl Chamber {
                 break;
             }
         }
+        self._prune();
+    }
+
+    fn _prune(&mut self) {
+        let max_y_coord = self.max_y_coord();
+        let pruned_rocks: HashSet<Coord> = self
+            .rocks
+            .iter()
+            .filter(|coord| coord.row >= max_y_coord - 70)
+            .cloned()
+            .collect();
+        self.rocks = pruned_rocks;
+    }
+
+    fn hash(&self) -> String {
+        let max_y_coord = self.max_y_coord();
+        let max_x_coord = self.max_x_coord();
+        let mut rel_coord_str: Vec<String> = vec![];
+        for coord in &self.rocks {
+            rel_coord_str.push(format!(
+                "{},{},",
+                max_y_coord - coord.row,
+                max_x_coord - coord.col
+            ));
+        }
+        rel_coord_str.sort();
+        rel_coord_str.push(format!(
+            "{},{}",
+            self.rock_iterator._idx, self.jet_iterator._idx
+        ));
+        rel_coord_str.into_iter().collect::<String>()
     }
 
     fn max_y_coord(&self) -> isize {
@@ -315,16 +354,16 @@ impl Chamber {
         }
     }
 
-    fn min_y_coord(&self) -> isize {
+    fn max_x_coord(&self) -> isize {
         if self.rocks.len() == 0 {
             0
         } else {
-            self.rocks.iter().map(|coord| coord.row).min().unwrap()
+            self.rocks.iter().map(|coord| coord.col).max().unwrap()
         }
     }
 
     fn tower_height(&self) -> isize {
-        self.max_y_coord() - self.min_y_coord() + 1
+        self.max_y_coord()
     }
 }
 
@@ -336,11 +375,63 @@ fn part_1(mut chamber: Chamber, n_rocks: usize) -> isize {
     chamber.tower_height()
 }
 
+fn part_2(mut chamber: Chamber, n_rocks: isize) -> isize {
+    let mut hash_to_height_and_rock_index: HashMap<String, (isize, isize)> = HashMap::new();
+
+    let first_rock_idx: isize;
+    let first_height_with_hash: isize;
+
+    let second_rock_idx: isize;
+    let second_height_with_hash: isize;
+
+    let mut rock_idx: isize = 0;
+    loop {
+        rock_idx += 1;
+        chamber.add_rock();
+
+        let hash = chamber.hash();
+        let height = chamber.tower_height();
+        if hash_to_height_and_rock_index.contains_key(&hash) {
+            // we've found a periodicity! huzzah! just some arithmetic to finish up
+            (first_height_with_hash, first_rock_idx) =
+                *hash_to_height_and_rock_index.get(&hash).unwrap();
+            second_height_with_hash = height;
+            second_rock_idx = rock_idx;
+            break;
+        }
+
+        hash_to_height_and_rock_index.insert(hash, (height, rock_idx));
+    }
+    // the length of the periodic cycle in dropped rocks
+    let cycle_period_rocks = second_rock_idx - first_rock_idx;
+    // the height added to the tower in a periodic cycle
+    let cycle_height = second_height_with_hash - first_height_with_hash;
+
+    // we've found our periodicity, now we need to handle the large number of remaining rocks to drop
+    let remaining_rocks = n_rocks - second_rock_idx;
+    // we need to repeat our periodic cycle this many times
+    let n_repeat_cycles = remaining_rocks / cycle_period_rocks;
+    // after we repeat the cycle, we need to drop this many more rocks
+    let remaining_cycles = remaining_rocks % cycle_period_rocks;
+
+    let height_at_end = chamber.tower_height();
+    let mut total_height: isize = height_at_end + (n_repeat_cycles * cycle_height);
+    for _ in 0..remaining_cycles {
+        chamber.add_rock();
+    }
+    (chamber.tower_height() - height_at_end) + total_height
+}
+
 fn main() {
+    // let mut reader = AocBufReader::from_string("inputs/part_1.txt");
+    // let jet_iterator = JetIterator::new(reader.next().unwrap());
+    // let chamber = Chamber::new(7, jet_iterator);
+    // println!("{}", part_1(chamber, 2_022));
+
     let mut reader = AocBufReader::from_string("inputs/part_1.txt");
     let jet_iterator = JetIterator::new(reader.next().unwrap());
     let chamber = Chamber::new(7, jet_iterator);
-    println!("{}", part_1(chamber, 2_022));
+    println!("{}", part_2(chamber, 1_000_000_000_000));
 }
 
 #[cfg(test)]
