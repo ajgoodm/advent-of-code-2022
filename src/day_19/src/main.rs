@@ -29,6 +29,7 @@ struct Blueprint {
 
 #[derive(PartialEq, Eq, Hash, Clone)]
 struct SimulationState {
+    t_minutes: usize,
     n_ore_possessed: usize,
     n_clay_possessed: usize,
     n_obsidian_possessed: usize,
@@ -42,6 +43,7 @@ struct SimulationState {
 impl SimulationState {
     fn new_simulation() -> SimulationState {
         SimulationState {
+            t_minutes: 0,
             n_ore_possessed: 0,
             n_clay_possessed: 0,
             n_obsidian_possessed: 0,
@@ -93,8 +95,9 @@ impl SimulationState {
         new_simulation
     }
 
-    /// Given the robots we have, update our resources
-    fn collect_resources(&mut self) {
+    /// Increment time; given the robots we have, update our resources
+    fn time_passes(&mut self) {
+        self.t_minutes += 1;
         self.n_ore_possessed += self.n_ore_collectors_built;
         self.n_clay_possessed += self.n_clay_collectors_built;
         self.n_obsidian_possessed += self.n_obsidian_collectors_built;
@@ -104,7 +107,7 @@ impl SimulationState {
     /// Given the resources available, what could we do next?
     fn next_possible_states(&self, blueprint: &Blueprint) -> Vec<SimulationState> {
         let mut next_state_noop = self.clone();
-        next_state_noop.collect_resources();
+        next_state_noop.time_passes();
 
         let mut next_states: Vec<SimulationState> = Vec::new();
         if self.can_afford_robot(&blueprint.ore_collector_cost) {
