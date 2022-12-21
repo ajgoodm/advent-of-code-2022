@@ -31,19 +31,29 @@ enum MonkeyJob {
 
 struct MonkeyJobs {
     jobs: HashMap<String, MonkeyJob>,
-    _cache: HashMap<String, isize>,
 }
 
 impl MonkeyJobs {
     fn new(jobs: HashMap<String, MonkeyJob>) -> MonkeyJobs {
-        MonkeyJobs {
-            jobs,
-            _cache: HashMap::new(),
-        }
+        MonkeyJobs { jobs }
     }
 
-    fn get_value(&mut self, monkey_id: String) -> isize {
-        10
+    fn get_value(&self, monkey_id: String) -> isize {
+        let monkey_job = self.jobs.get(&monkey_id).unwrap();
+        match monkey_job {
+            MonkeyJob::DoOperation(operation) => {
+                let argument_1 = self.get_value(operation.argument_1.clone());
+                let argument_2 = self.get_value(operation.argument_2.clone());
+                let return_value = match operation.operation_type {
+                    OperationType::Addition => argument_1 + argument_2,
+                    OperationType::Subtraction => argument_1 - argument_2,
+                    OperationType::Multiplication => argument_1 * argument_2,
+                    OperationType::Division => argument_1 / argument_2,
+                };
+                return return_value;
+            }
+            MonkeyJob::Value(return_value) => return *return_value,
+        }
     }
 }
 
@@ -95,7 +105,7 @@ fn parse_input(reader: AocBufReader) -> MonkeyJobs {
 }
 
 fn main() {
-    let monkey_jobs = parse_input(AocBufReader::from_string("inputs/example.txt"));
+    let monkey_jobs = parse_input(AocBufReader::from_string("inputs/part_1.txt"));
     println!("{}", part_1(monkey_jobs));
 }
 
