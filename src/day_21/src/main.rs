@@ -31,6 +31,24 @@ enum MonkeyJob {
 
 struct MonkeyJobs {
     jobs: HashMap<String, MonkeyJob>,
+    _cache: HashMap<String, isize>,
+}
+
+impl MonkeyJobs {
+    fn new(jobs: HashMap<String, MonkeyJob>) -> MonkeyJobs {
+        MonkeyJobs {
+            jobs,
+            _cache: HashMap::new(),
+        }
+    }
+
+    fn get_value(&mut self, monkey_id: String) -> isize {
+        10
+    }
+}
+
+fn part_1(mut monkey_jobs: MonkeyJobs) -> isize {
+    monkey_jobs.get_value("root".to_string())
 }
 
 fn parse_input(reader: AocBufReader) -> MonkeyJobs {
@@ -73,11 +91,12 @@ fn parse_input(reader: AocBufReader) -> MonkeyJobs {
         }
     }
 
-    MonkeyJobs { jobs }
+    MonkeyJobs::new(jobs)
 }
 
 fn main() {
-    println!("Hello, world!");
+    let monkey_jobs = parse_input(AocBufReader::from_string("inputs/example.txt"));
+    println!("{}", part_1(monkey_jobs));
 }
 
 #[cfg(test)]
