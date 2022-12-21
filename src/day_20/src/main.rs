@@ -134,6 +134,38 @@ fn parse_input_pt_1(reader: AocBufReader) -> LinkedRing {
     LinkedRing { elements }
 }
 
+fn parse_input_pt_2(reader: AocBufReader) -> LinkedRing {
+    let values: Vec<isize> = reader
+        .into_iter()
+        .map(|line| line.parse::<isize>().unwrap())
+        .collect();
+    let n_values = values.len();
+    let mut elements: Vec<Node> = vec![];
+    for (idx, val) in values.into_iter().enumerate() {
+        let previous: usize;
+        if idx == 0 {
+            previous = n_values - 1;
+        } else {
+            previous = idx - 1;
+        }
+
+        let next: usize;
+        if idx == n_values - 1 {
+            next = 0;
+        } else {
+            next = idx + 1;
+        }
+
+        elements.push(Node {
+            value: val * 811589153,
+            id: idx,
+            previous,
+            next,
+        });
+    }
+    LinkedRing { elements }
+}
+
 fn part_1(reader: AocBufReader) -> isize {
     let mut linear_ring = parse_input_pt_1(reader);
     for id in 0..linear_ring.len() {
@@ -151,11 +183,34 @@ fn part_1(reader: AocBufReader) -> isize {
         + linear_ring.get_nth_value_after_zero(3_000)
 }
 
+fn part_2(reader: AocBufReader) -> isize {
+    let mut linear_ring = parse_input_pt_2(reader);
+    for _ in 0..10 {
+        for id in 0..linear_ring.len() {
+            let value = linear_ring.elements.get(id).unwrap().value;
+            let n_moves = value % ((linear_ring.len() as isize) - 1);
+            let n_moves = n_moves.abs() as usize;
+            if value < 0 {
+                linear_ring.pull_n(id, n_moves);
+            } else if value > 0 {
+                linear_ring.push_n(id, n_moves);
+            }
+        }
+    }
+
+    linear_ring.get_nth_value_after_zero(1_000)
+        + linear_ring.get_nth_value_after_zero(2_000)
+        + linear_ring.get_nth_value_after_zero(3_000)
+}
+
 fn main() {
-    // too low: 12962
     println!(
         "part_1: {}",
         part_1(AocBufReader::from_string("inputs/part_1.txt"))
+    );
+    println!(
+        "part_2: {}",
+        part_2(AocBufReader::from_string("inputs/part_1.txt"))
     );
 }
 
