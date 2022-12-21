@@ -33,11 +33,6 @@ struct MonkeyJobs {
     jobs: HashMap<String, MonkeyJob>,
 }
 
-struct LinearExpression {
-    constant: isize,
-    human_coefficient: isize,
-}
-
 impl MonkeyJobs {
     fn new(jobs: HashMap<String, MonkeyJob>) -> MonkeyJobs {
         MonkeyJobs { jobs }
