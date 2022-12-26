@@ -108,6 +108,127 @@ impl Board {
             }
         }
     }
+
+    fn wrap_cube(&self, position: &Coord) -> (Coord, Orientation) {
+        if position.row == 1 && position.col >= 51 && position.col <= 100 {
+            (
+                Coord {
+                    row: position.col + 100,
+                    col: 1,
+                },
+                Orientation::Right,
+            )
+        } else if position.row == 1 && position.col >= 101 && position.col <= 150 {
+            (
+                Coord {
+                    row: 200,
+                    col: position.col - 100,
+                },
+                Orientation::Up,
+            )
+        } else if position.row >= 1 && position.row <= 50 && position.col == 150 {
+            (
+                Coord {
+                    row: 151 - position.row,
+                    col: 100,
+                },
+                Orientation::Left,
+            )
+        } else if position.row == 50 && position.col >= 101 && position.col <= 150 {
+            (
+                Coord {
+                    row: position.col - 50,
+                    col: 100,
+                },
+                Orientation::Left,
+            )
+        } else if position.row >= 51 && position.row <= 100 && position.col == 100 {
+            (
+                Coord {
+                    row: 50,
+                    col: position.row + 50,
+                },
+                Orientation::Up,
+            )
+        } else if position.row >= 101 && position.row <= 150 && position.col == 100 {
+            (
+                Coord {
+                    row: 151 - position.row,
+                    col: 150,
+                },
+                Orientation::Left,
+            )
+        } else if position.row == 150 && position.col >= 51 && position.col <= 100 {
+            (
+                Coord {
+                    row: position.col + 100,
+                    col: 50,
+                },
+                Orientation::Left,
+            )
+        } else if position.row >= 151 && position.row <= 200 && position.col == 50 {
+            (
+                Coord {
+                    row: 150,
+                    col: position.row - 100,
+                },
+                Orientation::Up,
+            )
+        } else if position.row == 200 && position.col >= 1 && position.col <= 50 {
+            (
+                Coord {
+                    row: 1,
+                    col: position.col + 100,
+                },
+                Orientation::Down,
+            )
+        } else if position.row >= 151 && position.row <= 200 && position.col == 1 {
+            (
+                Coord {
+                    row: 1,
+                    col: position.row - 100,
+                },
+                Orientation::Down,
+            )
+        } else if position.row >= 101 && position.row <= 150 && position.col == 1 {
+            (
+                Coord {
+                    row: 151 - position.row,
+                    col: 51,
+                },
+                Orientation::Right,
+            )
+        } else if position.row == 101 && position.col >= 1 && position.col <= 50 {
+            (
+                Coord {
+                    row: position.col + 50,
+                    col: 51,
+                },
+                Orientation::Right,
+            )
+        } else if position.row >= 51 && position.row <= 100 && position.col == 51 {
+            (
+                Coord {
+                    row: 101,
+                    col: position.row - 50,
+                },
+                Orientation::Down,
+            )
+        } else if position.row >= 1 && position.row <= 50 && position.col == 51 {
+            (
+                Coord {
+                    row: 151 - position.row,
+                    col: 1,
+                },
+                Orientation::Right,
+            )
+        } else {
+            panic!(
+                "We've entered wrap cube, but we have an unhandled mapping: ({}, {})",
+                position.row, position.col
+            );
+        }
+    }
 }
 
 enum RightLeft {
@@ -120,6 +241,7 @@ enum Instruction {
     Move(usize),
 }
 
+#[derive(Clone)]
 enum Orientation {
     Up,
     Right,
@@ -152,6 +274,15 @@ impl Orientation {
             Orientation::Left => 2,
             Orientation::Down => 1,
             Orientation::Right => 0,
+        }
+    }
+
+    fn as_string(&self) -> String {
+        match self {
+            Orientation::Up => "Up".to_string(),
+            Orientation::Right => "Right".to_string(),
+            Orientation::Down => "Down".to_string(),
+            Orientation::Left => "Left".to_string(),
         }
     }
 }
@@ -188,7 +319,7 @@ impl Mover {
         }
     }
 
-    fn _move(&mut self, n_moves: usize, board: &Board) {
+    fn _move_part_1(&mut self, n_moves: usize, board: &Board) {
         for _ in 0..n_moves {
             let mut next = match self.orientation {
                 Orientation::Up => self.position.up(),
@@ -211,10 +342,44 @@ impl Mover {
         }
     }
 
-    fn execute_instruction(&mut self, board: &Board, instruction: Instruction) {
+    fn _move_part_2(&mut self, n_moves: usize, board: &Board) {
+        for _ in 0..n_moves {
+            let mut next_position = match self.orientation {
+                Orientation::Up => self.position.up(),
+                Orientation::Right => self.position.right(),
+                Orientation::Down => self.position.down(),
+                Orientation::Left => self.position.left(),
+            };
+            let mut next_orientation = self.orientation.clone();
+
+            if !board.open_tiles.contains(&next_position)
+                && !board.solid_walls.contains(&next_position)
+            {
+                // this space isn't on the map!
+                (next_position, next_orientation) = board.wrap_cube(&self.position);
+            }
+
+            if board.solid_walls.contains(&next_position) {
+                // we ran into a wall!
+                break;
+            }
+
+            self.position = next_position;
+            self.orientation = next_orientation;
+        }
+    }
+
+    fn execute_instruction_part_1(&mut self, board: &Board, instruction: Instruction) {
         match instruction {
             Instruction::Rotate(right_left) => self._rotate(right_left),
-            Instruction::Move(n_moves) => self._move(n_moves, &board),
+            Instruction::Move(n_moves) => self._move_part_1(n_moves, &board),
+        }
+    }
+
+    fn execute_instruction_part_2(&mut self, board: &Board, instruction: Instruction) {
+        match instruction {
+            Instruction::Rotate(right_left) => self._rotate(right_left),
+            Instruction::Move(n_moves) => self._move_part_2(n_moves, &board),
         }
     }
 }
@@ -298,7 +463,23 @@ fn part_1(reader: AocBufReader) -> isize {
     let (board, instructions) = parse_input(reader);
     let mut mover = Mover::new(&board);
     for instruction in instructions {
-        mover.execute_instruction(&board, instruction);
+        mover.execute_instruction_part_1(&board, instruction);
+    }
+
+    let final_row = mover.position.row;
+    let final_col = mover.position.col;
+    let facing = mover.orientation.facing();
+
+    println!("row: {}, col: {}, facing: {}", final_row, final_col, facing);
+
+    1_000 * final_row + 4 * final_col + facing
+}
+
+fn part_2(reader: AocBufReader) -> isize {
+    let (board, instructions) = parse_input(reader);
+    let mut mover = Mover::new(&board);
+    for instruction in instructions {
+        mover.execute_instruction_part_2(&board, instruction);
     }
 
     let final_row = mover.position.row;
@@ -312,6 +493,7 @@ fn part_1(reader: AocBufReader) -> isize {
 
 fn main() {
     println!("{}", part_1(AocBufReader::from_string("inputs/part_1.txt")));
+    println!("{}", part_2(AocBufReader::from_string("inputs/part_1.txt")));
 }
 
 #[cfg(test)]
