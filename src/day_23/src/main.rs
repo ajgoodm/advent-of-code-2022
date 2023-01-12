@@ -332,10 +332,10 @@ fn part_2(mut elves: Elves) -> usize {
 }
 
 fn main() {
-    // println!(
-    //     "{}",
-    //     part_1(parse_input(AocBufReader::from_string("inputs/part_1.txt")))
-    // );
+    println!(
+        "{}",
+        part_1(parse_input(AocBufReader::from_string("inputs/part_1.txt")))
+    );
     println!(
         "{}",
         part_2(parse_input(AocBufReader::from_string("inputs/part_1.txt")))
