@@ -179,51 +179,36 @@ impl Elves {
         self.elves.iter().map(|elf| elf.position.clone()).collect()
     }
 
-    fn has_neighbors_north(&self, position: &Coord) -> bool {
-        self.elf_positions()
-            .intersection(&position.neighbors_north())
-            .cloned()
-            .collect::<HashSet<Coord>>()
-            .len()
-            > 0
+    fn has_neighbors_north(position: &Coord, elf_positions: &HashSet<Coord>) -> bool {
+        !position.neighbors_north().is_disjoint(elf_positions)
     }
 
-    fn has_neighbors_east(&self, position: &Coord) -> bool {
-        self.elf_positions()
-            .intersection(&position.neighbors_east())
-            .cloned()
-            .collect::<HashSet<Coord>>()
-            .len()
-            > 0
+    fn has_neighbors_east(position: &Coord, elf_positions: &HashSet<Coord>) -> bool {
+        !position.neighbors_east().is_disjoint(elf_positions)
     }
 
-    fn has_neighbors_south(&self, position: &Coord) -> bool {
-        self.elf_positions()
-            .intersection(&position.neighbors_south())
-            .cloned()
-            .collect::<HashSet<Coord>>()
-            .len()
-            > 0
+    fn has_neighbors_south(position: &Coord, elf_positions: &HashSet<Coord>) -> bool {
+        !position.neighbors_south().is_disjoint(elf_positions)
     }
 
-    fn has_neighbors_west(&self, position: &Coord) -> bool {
-        self.elf_positions()
-            .intersection(&position.neighbors_west())
-            .cloned()
-            .collect::<HashSet<Coord>>()
-            .len()
-            > 0
+    fn has_neighbors_west(position: &Coord, elf_positions: &HashSet<Coord>) -> bool {
+        !position.neighbors_west().is_disjoint(elf_positions)
     }
 
     fn plan_moves(&mut self) {
         let candidate_directions = self.get_candidate_directions();
         self.cycle_direction();
 
+        let elf_positions = self.elf_positions();
         for elf_idx in 0..self.len() {
-            let elf_has_neighbors_north = self.has_neighbors_north(&self.elves[elf_idx].position);
-            let elf_has_neighbors_east = self.has_neighbors_east(&self.elves[elf_idx].position);
-            let elf_has_neighbors_south = self.has_neighbors_south(&self.elves[elf_idx].position);
-            let elf_has_neighbors_west = self.has_neighbors_west(&self.elves[elf_idx].position);
+            let elf_has_neighbors_north =
+                Elves::has_neighbors_north(&self.elves[elf_idx].position, &elf_positions);
+            let elf_has_neighbors_east =
+                Elves::has_neighbors_east(&self.elves[elf_idx].position, &elf_positions);
+            let elf_has_neighbors_south =
+                Elves::has_neighbors_south(&self.elves[elf_idx].position, &elf_positions);
+            let elf_has_neighbors_west =
+                Elves::has_neighbors_west(&self.elves[elf_idx].position, &elf_positions);
             let elf_has_neighbors = elf_has_neighbors_north
                 || elf_has_neighbors_east
                 || elf_has_neighbors_south
@@ -268,7 +253,7 @@ impl Elves {
         }
     }
 
-    fn execute_moves(&mut self) {
+    fn execute_moves(&mut self) -> bool {
         let mut n_elves_planning_to_move_to_coord: HashMap<Coord, usize> = HashMap::new();
         for elf in self.elves.iter() {
             n_elves_planning_to_move_to_coord
@@ -277,15 +262,21 @@ impl Elves {
                 .or_insert(1);
         }
 
+        let mut elves_moved = false;
         for elf in self.elves.iter_mut() {
             if *n_elves_planning_to_move_to_coord
                 .get(&elf.proposed_move)
                 .unwrap()
                 == 1
             {
+                if elf.position != elf.proposed_move {
+                    elves_moved = true;
+                }
                 elf.position = elf.proposed_move.clone();
             }
         }
+
+        elves_moved
     }
 
     fn part_1_count(&self) -> isize {
@@ -326,10 +317,28 @@ fn part_1(mut elves: Elves) -> isize {
     elves.part_1_count()
 }
 
+fn part_2(mut elves: Elves) -> usize {
+    let mut n_rounds: usize = 0;
+    loop {
+        n_rounds += 1;
+        elves.plan_moves();
+        let elves_moved = elves.execute_moves();
+        if !elves_moved {
+            break;
+        }
+    }
+
+    n_rounds
+}
+
 fn main() {
+    // println!(
+    //     "{}",
+    //     part_1(parse_input(AocBufReader::from_string("inputs/part_1.txt")))
+    // );
     println!(
         "{}",
-        part_1(parse_input(AocBufReader::from_string("inputs/part_1.txt")))
+        part_2(parse_input(AocBufReader::from_string("inputs/part_1.txt")))
     );
 }
 
