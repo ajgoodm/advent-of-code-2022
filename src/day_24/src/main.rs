@@ -214,6 +214,7 @@ impl BlizzardMap {
             .difference(&occupied_spaces)
             .cloned()
             .collect::<HashSet<Coord>>();
+        unoccupied_spaces.insert(self.start.clone());
         unoccupied_spaces.insert(self.end.clone());
 
         self._open_spaces_by_t.insert(self._t, unoccupied_spaces);
@@ -331,15 +332,10 @@ fn parse_input(reader: AocBufReader) -> BlizzardMap {
     )
 }
 
-fn part_1(reader: AocBufReader) -> usize {
-    let mut blizzard_map = parse_input(reader);
+fn shortest_path(blizzard_map: &mut BlizzardMap, start_node: Node, end_position: Coord) -> usize {
     let mut visited_nodes: HashSet<Node> = HashSet::new();
     let mut unvisited_nodes: HashSet<Node> = HashSet::new();
-
-    unvisited_nodes.insert(Node {
-        position: blizzard_map.start.clone(),
-        t: 0,
-    });
+    unvisited_nodes.insert(start_node);
 
     let mut minimum_time: usize = usize::MAX;
     while unvisited_nodes.len() > 0 {
@@ -349,7 +345,7 @@ fn part_1(reader: AocBufReader) -> usize {
 
         let next_nodes = blizzard_map.get_neighbor_nodes(node);
         for next_node in next_nodes {
-            if next_node.position == blizzard_map.end {
+            if next_node.position == end_position {
                 if next_node.t < minimum_time {
                     minimum_time = next_node.t;
                 }
@@ -365,10 +361,30 @@ fn part_1(reader: AocBufReader) -> usize {
 }
 
 fn main() {
-    println!(
-        "part 1: {}",
-        part_1(AocBufReader::from_string("inputs/part_1.txt"))
-    );
+    let mut blizzard_map = parse_input(AocBufReader::from_string("inputs/part_1.txt"));
+    let start_node = Node {
+        position: blizzard_map.start.clone(),
+        t: 0,
+    };
+    let end_position = blizzard_map.end.clone();
+    let leg_1 = shortest_path(&mut blizzard_map, start_node, end_position);
+    println!("leg_1: {}", leg_1);
+
+    let start_node = Node {
+        position: blizzard_map.end.clone(),
+        t: leg_1,
+    };
+    let end_position = blizzard_map.start.clone();
+    let leg_2 = shortest_path(&mut blizzard_map, start_node, end_position);
+    println!("leg_2: {}", leg_2);
+
+    let start_node = Node {
+        position: blizzard_map.start.clone(),
+        t: leg_2,
+    };
+    let end_position = blizzard_map.end.clone();
+    let leg_3 = shortest_path(&mut blizzard_map, start_node, end_position);
+    println!("leg_3: {}", leg_3);
 }
 
 #[cfg(test)]
