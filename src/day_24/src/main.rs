@@ -2,18 +2,40 @@ use std::collections::{HashMap, HashSet};
 
 use shared::input::AocBufReader;
 
-#[derive(PartialEq, Eq, Hash)]
-enum Direction {
-    North,
-    East,
-    South,
-    West,
-}
-
 #[derive(PartialEq, Eq, Hash, Clone)]
 struct Coord {
     row: usize,
     col: usize,
+}
+
+impl Coord {
+    fn north(&self) -> Coord {
+        Coord {
+            row: self.row - 1,
+            col: self.col,
+        }
+    }
+
+    fn east(&self) -> Coord {
+        Coord {
+            row: self.row,
+            col: self.col + 1,
+        }
+    }
+
+    fn south(&self) -> Coord {
+        Coord {
+            row: self.row + 1,
+            col: self.col,
+        }
+    }
+
+    fn west(&self) -> Coord {
+        Coord {
+            row: self.row,
+            col: self.col - 1,
+        }
+    }
 }
 
 struct BoundingBox {
@@ -41,6 +63,12 @@ impl BoundingBox {
             all_spaces,
         }
     }
+}
+
+#[derive(PartialEq, Eq, Hash, Clone)]
+struct Node {
+    position: Coord,
+    t: usize,
 }
 
 struct BlizzardMap {
@@ -182,13 +210,13 @@ impl BlizzardMap {
             .cloned()
             .collect::<HashSet<Coord>>();
         let occupied_spaces = self.blizzard_spaces();
-        self._open_spaces_by_t.insert(
-            self._t,
-            all_spaces
-                .difference(&occupied_spaces)
-                .cloned()
-                .collect::<HashSet<Coord>>(),
-        );
+        let mut unoccupied_spaces = all_spaces
+            .difference(&occupied_spaces)
+            .cloned()
+            .collect::<HashSet<Coord>>();
+        unoccupied_spaces.insert(self.end.clone());
+
+        self._open_spaces_by_t.insert(self._t, unoccupied_spaces);
     }
 
     fn get_open_spaces_at_time_t(&mut self, t: usize) -> &HashSet<Coord> {
@@ -197,6 +225,54 @@ impl BlizzardMap {
         }
 
         self._open_spaces_by_t.get(&t).unwrap()
+    }
+
+    fn get_neighbor_nodes(&mut self, node: Node) -> Vec<Node> {
+        let next_t = node.t + 1;
+        let mut neighbor_nodes: Vec<Node> = Vec::new();
+
+        let all_open_spaces = self.get_open_spaces_at_time_t(next_t);
+        if node.position.row != 0 {
+            let north = node.position.north();
+            if all_open_spaces.contains(&north) {
+                neighbor_nodes.push(Node {
+                    position: north,
+                    t: next_t,
+                });
+            }
+        }
+
+        if all_open_spaces.contains(&node.position) {
+            // we can just wait
+            neighbor_nodes.push(Node {
+                position: node.position.clone(),
+                t: next_t,
+            });
+        }
+
+        let east = node.position.east();
+        if all_open_spaces.contains(&east) {
+            neighbor_nodes.push(Node {
+                position: east,
+                t: next_t,
+            });
+        }
+        let south = node.position.south();
+        if all_open_spaces.contains(&south) {
+            neighbor_nodes.push(Node {
+                position: south,
+                t: next_t,
+            });
+        }
+        let west = node.position.west();
+        if all_open_spaces.contains(&west) {
+            neighbor_nodes.push(Node {
+                position: west,
+                t: next_t,
+            });
+        }
+
+        neighbor_nodes
     }
 }
 
@@ -215,7 +291,7 @@ fn parse_input(reader: AocBufReader) -> BlizzardMap {
             match c {
                 '#' => (),
                 '.' => {
-                    if row == 1 {
+                    if row == 0 {
                         start = Coord { row, col };
                     } else {
                         end = Coord { row, col };
@@ -255,12 +331,44 @@ fn parse_input(reader: AocBufReader) -> BlizzardMap {
     )
 }
 
-fn part_1(reader: AocBufReader) {
+fn part_1(reader: AocBufReader) -> usize {
     let mut blizzard_map = parse_input(reader);
+    let mut visited_nodes: HashSet<Node> = HashSet::new();
+    let mut unvisited_nodes: HashSet<Node> = HashSet::new();
+
+    unvisited_nodes.insert(Node {
+        position: blizzard_map.start.clone(),
+        t: 0,
+    });
+
+    let mut minimum_time: usize = usize::MAX;
+    while unvisited_nodes.len() > 0 {
+        let node = unvisited_nodes.iter().next().unwrap().clone();
+        unvisited_nodes.remove(&node);
+        visited_nodes.insert(node.clone());
+
+        let next_nodes = blizzard_map.get_neighbor_nodes(node);
+        for next_node in next_nodes {
+            if next_node.position == blizzard_map.end {
+                if next_node.t < minimum_time {
+                    minimum_time = next_node.t;
+                }
+            } else if !visited_nodes.contains(&next_node) {
+                if next_node.t < (minimum_time - 1) {
+                    unvisited_nodes.insert(next_node);
+                }
+            }
+        }
+    }
+
+    minimum_time
 }
 
 fn main() {
-    part_1(AocBufReader::from_string("inputs/example.txt"));
+    println!(
+        "part 1: {}",
+        part_1(AocBufReader::from_string("inputs/part_1.txt"))
+    );
 }
 
 #[cfg(test)]
